@@ -17,6 +17,7 @@ export default function ProjectsEditor() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string>('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -37,7 +38,7 @@ export default function ProjectsEditor() {
   const loadProjects = async () => {
     try {
       const data = await api.getProjects();
-      setProjects(data);
+      setProjects(Array.isArray(data.projects) ? data.projects : []);
     } catch (error) {
       toast.error('Failed to load projects');
     } finally {
@@ -65,40 +66,53 @@ export default function ProjectsEditor() {
       const token = auth.getToken();
       if (!token) throw new Error('Not authenticated');
 
-      let imageUrl = formData.image;
+      const formDataToSend = new FormData();
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('technologies', formData.technologies);
+      formDataToSend.append('liveLink', formData.liveUrl); // Fix field name for backend
+      formDataToSend.append('githubLink', formData.githubUrl); // Fix field name for backend
+      formDataToSend.append('featured', formData.featured ? 'true' : 'false');
       if (selectedImage) {
-        // Upload image to backend (Cloudinary)
-        const formDataImg = new FormData();
-        formDataImg.append('image', selectedImage);
-        const res = await fetch('https://joash-backend.onrender.com/api/upload', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formDataImg,
-        });
-        if (!res.ok) throw new Error('Image upload failed');
-        const result = await res.json();
-        imageUrl = result.url;
+        formDataToSend.append('image', selectedImage);
       }
 
-      const projectData = {
-        ...formData,
-        image: imageUrl,
-        technologies: formData.technologies.split(',').map(t => t.trim()),
-      };
-
       if (editingProject) {
-        await api.updateProject(editingProject.id, projectData, token);
+        await api.updateProject(
+          editingProject._id || editingProject.id,
+          {
+            title: formData.title,
+            description: formData.description,
+            technologies: formData.technologies.split(',').map(t => t.trim()),
+            liveLink: formData.liveUrl,
+            githubLink: formData.githubUrl,
+            featured: formData.featured,
+          },
+          token,
+          selectedImage
+        );
         toast.success('Project updated successfully!');
       } else {
-        await api.createProject(projectData, token);
+        await api.createProject(
+          {
+            title: formData.title,
+            description: formData.description,
+            technologies: formData.technologies.split(',').map(t => t.trim()),
+            liveLink: formData.liveUrl,
+            githubLink: formData.githubUrl,
+            featured: formData.featured,
+            image: '',
+          },
+          token,
+          selectedImage
+        );
         toast.success('Project created successfully!');
       }
 
       await loadProjects();
       resetForm();
       setSelectedImage(null);
+      setPreviewImage('');
     } catch (error) {
       toast.error('Failed to save project');
     } finally {
@@ -110,13 +124,14 @@ export default function ProjectsEditor() {
     setFormData({
       title: project.title,
       description: project.description,
-      image: project.image,
-      technologies: project.technologies.join(', '),
-      liveUrl: project.liveUrl || '',
-      githubUrl: project.githubUrl || '',
+      image: typeof project.image === 'string' ? project.image : project.image?.url || '',
+      technologies: Array.isArray(project.technologies) ? project.technologies.join(', ') : '',
+      liveUrl: project.liveUrl || project.liveLink || '',
+      githubUrl: project.githubUrl || project.githubLink || '',
       featured: project.featured,
     });
     setSelectedImage(null);
+    setPreviewImage(typeof project.image === 'string' ? project.image : project.image?.url || '');
     setEditingProject(project);
     setShowAddForm(true);
   };
@@ -195,13 +210,14 @@ export default function ProjectsEditor() {
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
                       setSelectedImage(e.target.files[0]);
+                      setPreviewImage(URL.createObjectURL(e.target.files[0]));
                     }
                   }}
                   className="bg-slate-800 border-slate-700 text-white"
                 />
-                {formData.image && (
+                {(previewImage || formData.image) && (
                   <img
-                    src={formData.image}
+                    src={previewImage || formData.image}
                     alt="Project Preview"
                     className="mt-2 w-24 h-24 object-cover rounded-lg border border-slate-700"
                   />
@@ -276,7 +292,7 @@ export default function ProjectsEditor() {
                   <div className="flex gap-4">
                     {project.image && (
                       <img
-                        src={project.image}
+                        src={typeof project.image === 'string' ? project.image : project.image.url}
                         alt={project.title}
                         className="w-20 h-20 object-cover rounded-lg"
                       />
@@ -299,6 +315,29 @@ export default function ProjectsEditor() {
                           Featured
                         </span>
                       )}
+                      {/* Show Live Link and GitHub Link */}
+                      <div className="flex gap-2 mt-2">
+                        {project.liveUrl || project.liveLink ? (
+                          <a
+                            href={project.liveUrl || project.liveLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#5d21da] underline text-xs"
+                          >
+                            Live Site
+                          </a>
+                        ) : null}
+                        {project.githubUrl || project.githubLink ? (
+                          <a
+                            href={project.githubUrl || project.githubLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-slate-400 underline text-xs"
+                          >
+                            GitHub
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -313,7 +352,7 @@ export default function ProjectsEditor() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(project.id)}
+                      onClick={() => handleDelete(project._id || project.id)}
                       className="border-red-600 text-red-400 hover:bg-red-900/20"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -116,27 +116,47 @@ export const api = {
     return response.json();
   },
 
-  createProject: async (data: Omit<Project, 'id'>, token: string): Promise<Project> => {
+  createProject: async (data: Omit<Project, 'id'>, token: string, imageFile?: File): Promise<Project> => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === 'technologies' && Array.isArray(value)) {
+        formData.append(key, value.join(','));
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, value as string);
+      }
+    });
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
     const response = await fetch(`${API_BASE_URL}/projects`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: formData,
     });
     if (!response.ok) throw new Error('Failed to create project');
     return response.json();
   },
 
-  updateProject: async (id: string, data: Partial<Project>, token: string): Promise<Project> => {
+  updateProject: async (id: string, data: Partial<Project>, token: string, imageFile?: File): Promise<Project> => {
+    const formData = new FormData();
+    Object.entries(data).forEach(([key, value]) => {
+      if (key === 'technologies' && Array.isArray(value)) {
+        formData.append(key, value.join(','));
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, value as string);
+      }
+    });
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
     const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: formData,
     });
     if (!response.ok) throw new Error('Failed to update project');
     return response.json();
