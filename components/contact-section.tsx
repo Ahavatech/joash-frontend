@@ -217,7 +217,7 @@ export default function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-medium text-white">Location</h4>
-                  <p className="text-slate-400">San Francisco, CA</p>
+                  <p className="text-slate-400">Ibadan, NGA</p>
                 </div>
               </motion.div>
             </div>
