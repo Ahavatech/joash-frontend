@@ -18,6 +18,7 @@ export default function TechnologiesEditor() {
     name: '',
     icon: '',
   });
+  const [selectedIconFile, setSelectedIconFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -51,16 +52,36 @@ export default function TechnologiesEditor() {
     }
   };
 
-  const addTechnology = () => {
-    if (newTech.name && newTech.icon) {
-      const technology: Technology = {
-        id: Date.now().toString(),
-        name: newTech.name,
-        icon: newTech.icon,
-        category: '', // Remove category from UI, but keep for backend compatibility
-      };
-      setTechnologies([...technologies, technology]);
-      setNewTech({ name: '', icon: '' });
+  const addTechnology = async () => {
+    if (!newTech.name || (!newTech.icon && !selectedIconFile)) return;
+    const token = auth.getToken();
+    if (!token) {
+      toast.error('Not authenticated');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('name', newTech.name);
+    if (newTech.icon) formData.append('icon', newTech.icon);
+    if (selectedIconFile) formData.append('icon', selectedIconFile);
+    try {
+      const response = await fetch('https://joash-backend.onrender.com/api/technologies', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success && data.technology) {
+        setTechnologies([...technologies, data.technology]);
+        setNewTech({ name: '', icon: '' });
+        setSelectedIconFile(null);
+        toast.success('Technology added!');
+      } else {
+        toast.error(data.message || 'Failed to add technology');
+      }
+    } catch (error) {
+      toast.error('Failed to add technology');
     }
   };
 
@@ -112,6 +133,20 @@ export default function TechnologiesEditor() {
                 className="bg-slate-800 border-slate-700 text-white"
                 placeholder="https://example.com/icon.svg"
               />
+              <Label className="text-white mt-2">Or Upload Icon File</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setSelectedIconFile(e.target.files[0]);
+                  }
+                }}
+                className="bg-slate-800 border-slate-700 text-white"
+              />
+              {selectedIconFile && (
+                <div className="mt-2 text-xs text-slate-400">Selected file: {selectedIconFile.name}</div>
+              )}
             </div>
           </div>
           <Button
