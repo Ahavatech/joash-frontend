@@ -21,6 +21,7 @@ export default function TechnologiesEditor() {
   const [selectedIconFile, setSelectedIconFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTechnologies();
@@ -29,7 +30,14 @@ export default function TechnologiesEditor() {
   const loadTechnologies = async () => {
     try {
       const data = await api.getTechnologies();
-      setTechnologies(data);
+      // API may return either an array or an object like { success: true, technologies: [...] }
+      if (Array.isArray(data)) {
+        setTechnologies(data);
+      } else if (data && Array.isArray((data as any).technologies)) {
+        setTechnologies((data as any).technologies);
+      } else {
+        setTechnologies([]);
+      }
     } catch (error) {
       toast.error('Failed to load technologies');
     } finally {
@@ -64,24 +72,19 @@ export default function TechnologiesEditor() {
     if (newTech.icon) formData.append('icon', newTech.icon);
     if (selectedIconFile) formData.append('icon', selectedIconFile);
     try {
-      const response = await fetch('https://joash-backend.onrender.com/api/technologies', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      const data = await response.json();
-      if (data.success && data.technology) {
-        setTechnologies([...technologies, data.technology]);
+      const result = await api.createTechnology({ name: newTech.name, icon: newTech.icon }, token, selectedIconFile || undefined);
+      if (result && result.success && result.technology) {
+        setTechnologies((prev) => [...(Array.isArray(prev) ? prev : []), result.technology]);
         setNewTech({ name: '', icon: '' });
         setSelectedIconFile(null);
         toast.success('Technology added!');
       } else {
-        toast.error(data.message || 'Failed to add technology');
+        console.error('Unexpected addTechnology response', result);
+        toast.error((result && (result.message || result.error)) || 'Failed to add technology');
       }
     } catch (error) {
-      toast.error('Failed to add technology');
+      console.error('addTechnology error', error);
+      toast.error((error as any)?.message || 'Failed to add technology');
     }
   };
 
@@ -91,8 +94,28 @@ export default function TechnologiesEditor() {
     ));
   };
 
-  const deleteTechnology = (id: string) => {
-    setTechnologies(technologies.filter(tech => tech.id !== id));
+  const deleteTechnology = async (id?: string) => {
+    if (!id) return;
+    const confirmDelete = window.confirm('Are you sure you want to delete this technology?');
+    if (!confirmDelete) return;
+    const token = auth.getToken();
+    if (!token) {
+      toast.error('Not authenticated');
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      await api.deleteTechnology(id, token);
+      // remove from local state
+      setTechnologies((prev) => (Array.isArray(prev) ? prev.filter((tech) => (tech.id || (tech as any)._id) !== id) : []));
+      toast.success('Technology deleted');
+    } catch (err: any) {
+      console.error('deleteTechnology error', err);
+      toast.error(err?.message || 'Failed to delete technology');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (isLoading) {
@@ -114,9 +137,9 @@ export default function TechnologiesEditor() {
         <CardHeader>
           <CardTitle className="text-white">Add New Technology</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label className="text-white">Name</Label>
               <Input
                 value={newTech.name}
@@ -125,7 +148,7 @@ export default function TechnologiesEditor() {
                 placeholder="React"
               />
             </div>
-            <div className="space-y-2">
+              <div className="space-y-2">
               <Label className="text-white">Icon URL</Label>
               <Input
                 value={newTech.icon}
@@ -164,20 +187,20 @@ export default function TechnologiesEditor() {
           <CardTitle className="text-white">Technologies List</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
+          <div className="grid gap-2">
             {Array.isArray(technologies) &&
               technologies.map((tech) => (
                 <div
                   key={tech.id}
-                  className="flex items-center justify-between p-4 bg-slate-800 rounded-lg"
+                  className="flex items-center justify-between p-2 bg-slate-800 rounded-md"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     {tech.icon && (
-                      <img src={tech.icon} alt={tech.name} className="w-8 h-8" />
+                      <img src={tech.icon} alt={tech.name} className="w-6 h-6" />
                     )}
                     <div>
                       <h3 className="text-white font-medium">{tech.name}</h3>
-                      <p className="text-slate-400 text-sm">{tech.category}</p>
+                      <p className="text-slate-400 text-xs">{tech.category}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -192,10 +215,11 @@ export default function TechnologiesEditor() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => deleteTechnology(tech.id)}
+                      onClick={() => deleteTechnology(tech.id || (tech as any)._id)}
                       className="border-red-600 text-red-400 hover:bg-red-900/20"
+                      disabled={deletingId === (tech.id || (tech as any)._id)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === (tech.id || (tech as any)._id) ? 'Deleting...' : <Trash2 className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>
@@ -205,7 +229,7 @@ export default function TechnologiesEditor() {
           <Button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full mt-6 bg-[#5d21da] hover:bg-[#4a1ba8] text-white"
+            className="w-full mt-4 bg-[#5d21da] hover:bg-[#4a1ba8] text-white"
           >
             {isSaving ? 'Saving...' : 'Save All Changes'}
           </Button>

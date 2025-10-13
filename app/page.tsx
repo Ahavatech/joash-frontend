@@ -9,6 +9,7 @@ import TechnologiesSection from "@/components/technologies-section"
 import ProjectsSection from "@/components/projects-section"
 import ContactSection from "@/components/contact-section"
 import Footer from "@/components/footer"
+import SocialSidebarWrapper from '@/components/SocialSidebarWrapper'
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
@@ -46,6 +47,7 @@ export default function Home() {
       className="min-h-screen bg-slate-900 text-white"
     >
       <Navigation />
+      <SocialSidebarWrapper />
       <main>
         <div id="hero">
           <HeroSection />

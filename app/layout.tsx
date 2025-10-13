@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { Toaster } from 'sonner'
 import "./globals.css"
+import SocialSidebarWrapper from '@/components/SocialSidebarWrapper'
 
 export default function RootLayout({
   children,
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark scroll-smooth">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
-        <Suspense fallback={null}>{children}</Suspense>
+  <Suspense fallback={null}>{children}</Suspense>
         <Toaster 
           position="top-right"
           toastOptions={{

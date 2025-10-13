@@ -12,7 +12,6 @@ import HeroEditor from '@/components/admin/HeroEditor';
 import AboutEditor from '@/components/admin/AboutEditor';
 import TechnologiesEditor from '@/components/admin/TechnologiesEditor';
 import ProjectsEditor from '@/components/admin/ProjectsEditor';
-import SocialsEditor from '@/components/admin/SocialsEditor';
 
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -56,10 +55,10 @@ export default function AdminDashboard() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="container mx-auto px-4 py-8"
+        className="container mx-auto px-2 py-3"
       >
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-lg font-medium">Admin Dashboard</h1>
           <Button
             onClick={handleLogout}
             variant="outline"
@@ -68,44 +67,36 @@ export default function AdminDashboard() {
             Logout
           </Button>
         </div>
-
-        <Tabs defaultValue="hero" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-900">
-            <TabsTrigger value="hero" className="data-[state=active]:bg-[#5d21da]">
+        <Tabs defaultValue="hero" className="space-y-2">
+          <TabsList className="grid w-full grid-cols-4 gap-2 bg-slate-900 rounded-md p-1">
+            <TabsTrigger value="hero" className="data-[state=active]:bg-[#5d21da] py-1 text-sm text-center rounded-sm">
               Hero
             </TabsTrigger>
-            <TabsTrigger value="about" className="data-[state=active]:bg-[#5d21da]">
+            <TabsTrigger value="about" className="data-[state=active]:bg-[#5d21da] py-1 text-sm text-center rounded-sm">
               About
             </TabsTrigger>
-            <TabsTrigger value="technologies" className="data-[state=active]:bg-[#5d21da]">
+            <TabsTrigger value="technologies" className="data-[state=active]:bg-[#5d21da] py-1 text-sm text-center rounded-sm">
               Technologies
             </TabsTrigger>
-            <TabsTrigger value="projects" className="data-[state=active]:bg-[#5d21da]">
+            <TabsTrigger value="projects" className="data-[state=active]:bg-[#5d21da] py-1 text-sm text-center rounded-sm">
               Projects
-            </TabsTrigger>
-            <TabsTrigger value="socials" className="data-[state=active]:bg-[#5d21da]">
-              Socials
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="hero">
+          <TabsContent value="hero" className="p-0">
             <HeroEditor />
           </TabsContent>
 
-          <TabsContent value="about">
+          <TabsContent value="about" className="p-0">
             <AboutEditor />
           </TabsContent>
 
-          <TabsContent value="technologies">
+          <TabsContent value="technologies" className="p-0">
             <TechnologiesEditor />
           </TabsContent>
 
-          <TabsContent value="projects">
+          <TabsContent value="projects" className="p-0">
             <ProjectsEditor />
-          </TabsContent>
-
-          <TabsContent value="socials">
-            <SocialsEditor />
           </TabsContent>
         </Tabs>
       </motion.div>

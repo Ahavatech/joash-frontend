@@ -14,9 +14,12 @@ import { Plus, X } from 'lucide-react';
 
 export default function AboutEditor() {
   const [aboutData, setAboutData] = useState<AboutData>({
+    title: '',
     description: '',
     profileImage: '',
+    skills: [],
   });
+  const [newSkill, setNewSkill] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -77,8 +80,8 @@ export default function AboutEditor() {
       }, token);
       toast.success('About section updated successfully!');
       setSelectedImage(null);
-      setPreviewImage(profileImageUrl);
-      setAboutData((prev) => ({ ...prev, profileImage: profileImageUrl }));
+  setPreviewImage(profileImageUrl || '');
+  setAboutData((prev) => ({ ...prev, profileImage: profileImageUrl || '' }));
     } catch (error) {
       toast.error('Failed to update about section');
     } finally {
@@ -90,7 +93,7 @@ export default function AboutEditor() {
     if (newSkill.trim()) {
       setAboutData({
         ...aboutData,
-        skills: [...aboutData.skills, newSkill.trim()],
+        skills: [...(aboutData.skills || []), newSkill.trim()],
       });
       setNewSkill('');
     }
@@ -99,7 +102,7 @@ export default function AboutEditor() {
   const removeSkill = (index: number) => {
     setAboutData({
       ...aboutData,
-      skills: aboutData.skills.filter((_, i) => i !== index),
+      skills: (aboutData.skills || []).filter((_, i) => i !== index),
     });
   };
 
@@ -150,7 +153,7 @@ export default function AboutEditor() {
               <img
                 src={previewImage}
                 alt="Profile Preview"
-                className="mt-2 w-24 h-24 object-cover rounded-full border border-slate-700"
+                className="mt-2 w-16 h-16 object-cover rounded-full border border-slate-700"
               />
             )}
           </div>

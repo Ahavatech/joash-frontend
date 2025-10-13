@@ -30,6 +30,7 @@ export default function ProjectsEditor() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProjects();
@@ -38,7 +39,14 @@ export default function ProjectsEditor() {
   const loadProjects = async () => {
     try {
       const data = await api.getProjects();
-      setProjects(Array.isArray(data.projects) ? data.projects : []);
+      // api.getProjects() may return an array of projects or an object like { projects: [...] }
+      if (Array.isArray(data)) {
+        setProjects(data);
+      } else if (data && Array.isArray((data as any).projects)) {
+        setProjects((data as any).projects);
+      } else {
+        setProjects([]);
+      }
     } catch (error) {
       toast.error('Failed to load projects');
     } finally {
@@ -78,8 +86,10 @@ export default function ProjectsEditor() {
       }
 
       if (editingProject) {
+        const idToUse = (editingProject._id || editingProject.id);
+        if (!idToUse) throw new Error('Project id missing');
         await api.updateProject(
-          editingProject._id || editingProject.id,
+          idToUse,
           {
             title: formData.title,
             description: formData.description,
@@ -89,7 +99,7 @@ export default function ProjectsEditor() {
             featured: formData.featured,
           },
           token,
-          selectedImage
+          selectedImage || undefined
         );
         toast.success('Project updated successfully!');
       } else {
@@ -104,7 +114,7 @@ export default function ProjectsEditor() {
             image: '',
           },
           token,
-          selectedImage
+          selectedImage || undefined
         );
         toast.success('Project created successfully!');
       }
@@ -137,15 +147,22 @@ export default function ProjectsEditor() {
   };
 
   const handleDelete = async (id: string) => {
+    const confirm = window.confirm('Are you sure you want to delete this project? This action cannot be undone.');
+    if (!confirm) return;
+
     try {
+      setDeletingId(id);
       const token = auth.getToken();
       if (!token) throw new Error('Not authenticated');
 
       await api.deleteProject(id, token);
       toast.success('Project deleted successfully!');
       await loadProjects();
-    } catch (error) {
-      toast.error('Failed to delete project');
+    } catch (error: any) {
+      // show server-provided errors when possible
+      toast.error(error?.message || 'Failed to delete project');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -192,7 +209,7 @@ export default function ProjectsEditor() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-white">Title</Label>
@@ -219,7 +236,7 @@ export default function ProjectsEditor() {
                   <img
                     src={previewImage || formData.image}
                     alt="Project Preview"
-                    className="mt-2 w-24 h-24 object-cover rounded-lg border border-slate-700"
+                    className="mt-2 w-16 h-16 object-cover rounded-md border border-slate-700"
                   />
                 )}
               </div>
@@ -230,7 +247,7 @@ export default function ProjectsEditor() {
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="bg-slate-800 border-slate-700 text-white min-h-[100px]"
+                className="bg-slate-800 border-slate-700 text-white min-h-[80px]"
               />
             </div>
 
@@ -286,17 +303,17 @@ export default function ProjectsEditor() {
       <div className="grid gap-4">
         {Array.isArray(projects) && projects.length > 0 ? (
           projects.map((project) => (
-            <Card key={project.id} className="bg-slate-900 border-slate-800">
-              <CardContent className="p-6">
+            <Card key={project._id || project.id} className="bg-slate-900 border-slate-800">
+              <CardContent className="p-3">
                 <div className="flex items-start justify-between">
                   <div className="flex gap-4">
-                    {project.image && (
-                      <img
-                        src={typeof project.image === 'string' ? project.image : project.image.url}
-                        alt={project.title}
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
-                    )}
+                        {project.image && (
+                          <img
+                            src={typeof project.image === 'string' ? project.image : project.image.url}
+                            alt={project.title}
+                            className="w-16 h-16 object-cover rounded-md"
+                          />
+                        )}
                     <div>
                       <h3 className="text-white font-semibold text-lg">{project.title}</h3>
                       <p className="text-slate-400 mt-1">{project.description}</p>
@@ -352,10 +369,14 @@ export default function ProjectsEditor() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(project._id || project.id)}
+                      onClick={() => {
+                        const id = project._id || project.id;
+                        if (id) handleDelete(id);
+                      }}
                       className="border-red-600 text-red-400 hover:bg-red-900/20"
+                      disabled={deletingId === (project._id || project.id)}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === (project._id || project.id) ? 'Deleting...' : <Trash2 className="w-4 h-4" />}
                     </Button>
                   </div>
                 </div>

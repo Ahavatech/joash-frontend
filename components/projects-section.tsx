@@ -9,10 +9,12 @@ type Project = {
   id: string;
   title: string;
   description: string;
-  image?: string;
+  image?: string | { url?: string } | any;
   technologies: string[];
   liveUrl?: string;
+  liveLink?: string;
   githubUrl?: string;
+  githubLink?: string;
   featured?: boolean;
 };
 export default function ProjectsSection() {

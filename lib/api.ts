@@ -10,27 +10,34 @@ export interface HeroData {
 }
 
 export interface AboutData {
-  title: string;
-  description: string;
-  profileImage: string;
-  skills: string[];
+  title?: string;
+  description?: string;
+  profileImage?: string;
+  skills?: string[];
 }
 
 export interface Technology {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
-  icon: string;
-  category: string;
+  icon?: string;
+  category?: string;
 }
 
 export interface Project {
-  id: string;
+  // Backend may return either `id` or `_id` depending on source (DB vs API)
+  id?: string;
+  _id?: string;
   title: string;
   description: string;
-  image: string;
+  // image can be a string URL or an object with a `url` field (depending on upload provider)
+  image?: string | { url?: string } | any;
   technologies: string[];
+  // API may use either liveUrl/liveLink and githubUrl/githubLink
   liveUrl?: string;
+  liveLink?: string;
   githubUrl?: string;
+  githubLink?: string;
   featured: boolean;
 }
 
@@ -50,7 +57,8 @@ export interface ContactMessage {
 // API functions
 export const api = {
   // Hero section
-  getHero: async (): Promise<HeroData> => {
+  // getHero may return either the raw hero object or a wrapper like { hero: {...} }
+  getHero: async (): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/hero`);
     if (!response.ok) throw new Error('Failed to fetch hero data');
     return response.json();
@@ -69,8 +77,8 @@ export const api = {
     return response.json();
   },
 
-  // About section
-  getAbout: async (): Promise<AboutData> => {
+  // About section - may return { about: {...} } or the raw about object
+  getAbout: async (): Promise<any> => {
     const response = await fetch(`${API_BASE_URL}/about`);
     if (!response.ok) throw new Error('Failed to fetch about data');
     return response.json();
@@ -93,20 +101,68 @@ export const api = {
   getTechnologies: async (): Promise<Technology[]> => {
     const response = await fetch(`${API_BASE_URL}/technologies`);
     if (!response.ok) throw new Error('Failed to fetch technologies');
-    return response.json();
+    const body = await response.json();
+    // Backend may return either an array or { success: true, technologies: [...] }
+    if (Array.isArray(body)) return body as Technology[];
+    if (body && Array.isArray((body as any).technologies)) return (body as any).technologies as Technology[];
+    return [];
   },
 
   updateTechnologies: async (data: Technology[], token: string): Promise<Technology[]> => {
+    // Backend exposes per-technology update (PUT /technologies/:id).
+    // If clients call this with an array, update each technology individually.
+    const results: Technology[] = [];
+    for (const tech of data) {
+      if (!tech.id && !tech._id) continue;
+      const id = (tech as any).id || (tech as any)._id;
+      const response = await fetch(`${API_BASE_URL}/technologies/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: tech.name, description: (tech as any).description, icon: tech.icon }),
+      });
+      if (!response.ok) {
+        // swallow individual failures but log them
+        try {
+          const err = await response.text();
+          console.error('Failed to update technology', id, err);
+        } catch (_) {
+          console.error('Failed to update technology', id);
+        }
+        continue;
+      }
+      const body = await response.json();
+      if (body && body.technology) results.push(body.technology as Technology);
+    }
+    return results;
+  },
+
+  createTechnology: async (data: { name: string; icon?: string }, token: string, iconFile?: File): Promise<any> => {
+    const form = new FormData();
+    form.append('name', data.name);
+    if (data.icon) form.append('icon', data.icon);
+    if (iconFile) form.append('icon', iconFile);
     const response = await fetch(`${API_BASE_URL}/technologies`, {
-      method: 'PUT',
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(data),
+      body: form,
     });
-    if (!response.ok) throw new Error('Failed to update technologies');
+    if (!response.ok) throw new Error('Failed to create technology');
     return response.json();
+  },
+
+  deleteTechnology: async (id: string, token: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/technologies/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to delete technology');
   },
 
   // Projects
@@ -169,7 +225,24 @@ export const api = {
         'Authorization': `Bearer ${token}`,
       },
     });
-    if (!response.ok) throw new Error('Failed to delete project');
+    if (!response.ok) {
+      // Try to surface server-provided error messages when available
+      let message = 'Failed to delete project';
+      try {
+        const body = await response.json();
+        if (body && (body.message || body.error)) {
+          message = body.message || body.error;
+        }
+      } catch (e) {
+        try {
+          const text = await response.text();
+          if (text) message = text;
+        } catch (_) {
+          /* ignore */
+        }
+      }
+      throw new Error(message);
+    }
   },
 
   // Social links

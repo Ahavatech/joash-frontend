@@ -58,7 +58,7 @@ export default function HeroSection() {
   }
 
   return (
-    <section className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
+    <section id="hero" className="min-h-screen flex items-center justify-center bg-black text-white relative overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#5d21da]/20 via-black to-black"></div>
       
