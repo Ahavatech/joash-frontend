@@ -91,27 +91,29 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-6"
+            className="space-y-6 mt-12"
           >
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-xl md:text-2xl text-[#5d21da] font-medium mb-2"
-            >
-              {heroData.subtitle}
-            </motion.h2>
+            <div className="space-y-1">
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="text-xl md:text-2xl text-[#5d21da] font-medium mb-1"
+              >
+                {heroData.subtitle}
+              </motion.h2>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mt-0"
-            >
-              <span className="bg-gradient-to-r from-white via-white to-[#5d21da] bg-clip-text text-transparent">
-                {heroData.title}
-              </span>
-            </motion.h1>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="text-5xl md:text-7xl lg:text-8xl font-bold leading-tight mt-0"
+              >
+                <span className="bg-gradient-to-r from-white via-white to-[#5d21da] bg-clip-text text-transparent">
+                  {heroData.title}
+                </span>
+              </motion.h1>
+            </div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
