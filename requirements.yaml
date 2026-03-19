@@ -1,0 +1,12 @@
+packages:
+  "react-calendly": "For embedding Calendly scheduling widget inline and in dialogs"
+  "framer-motion": "For page transitions, scroll animations, and micro-interactions"
+  "lucide-react": "For UI icons like CalendarDays, MessageSquareText, Sparkles"
+  "clsx": "For conditional class names merging"
+  "tailwind-merge": "For resolving Tailwind class conflicts"
+
+images: []
+
+notes:
+  - "Using placeholder Calendly URL as requested by user"
+  - "Assuming @workspace/api-client-react is available for API hooks"

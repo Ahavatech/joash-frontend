@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { InlineWidget } from 'react-calendly';
+import { InlineWidget, useCalendlyEventListener } from 'react-calendly';
 import {
-  ArrowRight,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -26,8 +25,45 @@ import {
 } from '@/components/ui/dialog';
 import { siteConfig } from '@/lib/site-config';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'https://joash-backend.onrender.com/api';
+
+async function logBookingEvent(eventType: string, payload?: Record<string, unknown>) {
+  try {
+    await fetch(`${BACKEND_URL}/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: (payload?.invitee_full_name as string) ?? 'Calendly User',
+        email: (payload?.invitee_email as string) ?? '',
+        message: `Booking event: ${eventType}${payload?.event_type_name ? ` — ${payload.event_type_name}` : ''}`,
+      }),
+    });
+  } catch {
+    // Fire-and-forget — never block the UX
+  }
+}
+
 export default function BookingIntegration() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Listen for Calendly events inside the dialog
+  useCalendlyEventListener({
+    onEventScheduled: (e) => {
+      const payload = e.data?.payload as Record<string, unknown> | undefined;
+      logBookingEvent('event_scheduled', payload);
+    },
+    onDateAndTimeSelected: () => {
+      logBookingEvent('date_time_selected');
+    },
+    onEventTypeViewed: () => {
+      logBookingEvent('widget_viewed');
+    },
+  });
+
+  const handleOpenDialog = () => {
+    logBookingEvent('dialog_opened');
+    setIsDialogOpen(true);
+  };
 
   const callHighlights = [
     '20 to 30 minute discovery call',
@@ -73,11 +109,11 @@ export default function BookingIntegration() {
           transition={{ duration: 0.8 }}
           className="text-center mb-14"
         >
-          <Badge className="mb-5 border border-[#5d21da]/30 bg-[#5d21da]/10 px-4 py-1.5 text-[#d7c6ff]">
-            Schedule a Call
-          </Badge>
-          <h2 className="text-4xl font-bold tracking-tight md:text-5xl mb-6">
-            Strategy first. Build second.
+          
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-white to-[#5d21da] bg-clip-text text-transparent">
+              Schedule a call
+            </span> 
           </h2>
           <p className="mx-auto max-w-3xl text-lg text-slate-300 md:text-xl">
             Use this call to pressure-test your idea, define the right MVP, or
@@ -130,10 +166,11 @@ export default function BookingIntegration() {
                 <DialogTrigger asChild>
                   <Button
                     size="lg"
+                    onClick={handleOpenDialog}
                     className="h-12 rounded-full bg-[#5d21da] px-7 text-white hover:bg-[#4a1ba8]"
                   >
-                    Open booking widget
-                    <ArrowRight className="h-4 w-4" />
+                    Book a call
+                    <CalendarDays className="h-4 w-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-5xl border-slate-800 bg-slate-950 p-0 text-white sm:max-w-5xl">
@@ -145,10 +182,15 @@ export default function BookingIntegration() {
                       Choose a slot and add project context so I can prepare before we meet.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="h-[75vh] min-h-[640px] overflow-hidden rounded-b-lg">
+                  <div className="h-[75vh] min-h-[640px] overflow-hidden rounded-b-lg relative">
+                    {/* Loading shimmer behind the Calendly widget */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white">
+                      <div className="h-8 w-8 rounded-full border-4 border-[#5d21da] border-t-transparent animate-spin" />
+                      <p className="text-sm text-slate-500">Loading scheduler…</p>
+                    </div>
                     <InlineWidget
                       url={siteConfig.calendlyUrl}
-                      styles={{ height: '100%', width: '100%' }}
+                      styles={{ height: '100%', width: '100%', position: 'relative', zIndex: 10 }}
                     />
                   </div>
                 </DialogContent>
@@ -164,6 +206,7 @@ export default function BookingIntegration() {
                   href={siteConfig.calendlyUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => logBookingEvent('opened_external_tab')}
                 >
                   Open in new tab
                   <ExternalLink className="h-4 w-4" />
