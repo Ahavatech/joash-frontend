@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { api, HeroData } from '@/lib/api';
-import { ArrowRight, Download } from 'lucide-react';
+import { ArrowRight, CalendarDays } from 'lucide-react';
 
 export default function HeroSection() {
   const [heroData, setHeroData] = useState<HeroData>({
@@ -145,9 +145,12 @@ export default function HeroSection() {
                 variant="outline"
                 size="lg"
                 className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg rounded-full transition-all duration-300 transform hover:scale-105"
+                asChild
               >
-                <Download className="w-5 h-5 mr-2" />
-                Download CV
+                <a href="#schedule">
+                  <CalendarDays className="w-5 h-5 mr-2" />
+                  Schedule a Call
+                </a>
               </Button>
             </motion.div>
           </motion.div>

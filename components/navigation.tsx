@@ -29,6 +29,7 @@ export default function Navigation() {
     { name: 'Home', id: 'hero' },
     { name: 'About', id: 'about' },
     { name: 'Projects', id: 'projects' },
+    { name: 'Schedule', id: 'schedule' },
     { name: 'Contact', id: 'contact' },
   ];
 

@@ -266,15 +266,39 @@ export const api = {
   },
 
   // Contact
-  submitContact: async (data: ContactMessage): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/contact`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Failed to submit contact message');
+  submitContact: async (data: ContactMessage, timeout = 15000): Promise<void> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const response = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        let errMsg = 'Failed to submit contact message';
+        try {
+          const body = await response.json();
+          if (body && (body.message || body.error)) errMsg = body.message || body.error;
+        } catch (_) {
+          try {
+            const text = await response.text();
+            if (text) errMsg = text;
+          } catch (_) {}
+        }
+        throw new Error(errMsg);
+      }
+    } catch (err: any) {
+      if (err && err.name === 'AbortError') {
+        throw new Error('Request timed out');
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   },
 
   // Authentication

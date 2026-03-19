@@ -8,6 +8,7 @@ import AboutSection from "@/components/about-section"
 import TechnologiesSection from "@/components/technologies-section"
 import ProjectsSection from "@/components/projects-section"
 import ContactSection from "@/components/contact-section"
+import BookingIntegration from "@/components/booking-integration"
 import Footer from "@/components/footer"
 import SocialSidebarWrapper from '@/components/SocialSidebarWrapper'
 
@@ -59,6 +60,7 @@ export default function Home() {
         <div id="projects">
           <ProjectsSection />
         </div>
+        <BookingIntegration />
         <div id="contact">
           <ContactSection />
         </div>

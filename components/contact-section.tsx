@@ -1,24 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { api, Social } from '@/lib/api';
-import { toast } from 'sonner';
-import { Send, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowRight, Mail, MapPin, Phone } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { siteConfig } from '@/lib/site-config';
 
 export default function ContactSection() {
   const [socials, setSocials] = useState<Social[]>([]);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -36,28 +27,6 @@ export default function ContactSection() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      await api.submitContact(formData);
-      toast.success('Message sent successfully! I\'ll get back to you soon.');
-      setFormData({ name: '', email: '', message: '' });
-    } catch (error) {
-      toast.error('Failed to send message. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
   };
 
   return (
@@ -86,78 +55,45 @@ export default function ContactSection() {
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-16 max-w-6xl mx-auto">
-          {/* Contact Form */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2 }}
+            className="rounded-[28px] border border-slate-800 bg-slate-900/50 p-8"
           >
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-white">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="bg-slate-900 border-slate-700 text-white focus:border-[#5d21da] focus:ring-[#5d21da]"
-                  required
-                />
+            <div className="max-w-xl space-y-6">
+              <p className="text-sm uppercase tracking-[0.25em] text-[#8f5cff]">
+                Best next step
+              </p>
+              <h3 className="text-3xl font-semibold leading-tight text-white">
+                Need to talk through scope, budget, or timeline?
+              </h3>
+              <p className="text-slate-300 leading-relaxed">
+                Start with the scheduling flow if you want a working session around
+                an MVP, redesign, automation, or product decision. It is the fastest
+                way to move from interest to clarity.
+              </p>
+              <div className="space-y-3 text-slate-300">
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                  Discovery calls are ideal for founders, teams, and solo builders with a defined problem.
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                  If you only need a quick answer, email works better and I can respond asynchronously.
+                </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="bg-slate-900 border-slate-700 text-white focus:border-[#5d21da] focus:ring-[#5d21da]"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="message" className="text-white">
-                  Message
-                </Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  className="bg-slate-900 border-slate-700 text-white focus:border-[#5d21da] focus:ring-[#5d21da] min-h-[120px]"
-                  required
-                />
-              </div>
-
               <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#5d21da] hover:bg-[#4a1ba8] text-white py-6 text-lg rounded-xl transition-all duration-300 transform hover:scale-105"
+                asChild
+                size="lg"
+                className="h-12 rounded-full bg-[#5d21da] px-7 text-white hover:bg-[#4a1ba8]"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5 mr-2" />
-                    Send Message
-                  </>
-                )}
+                <a href="#schedule">
+                  Go to scheduling
+                  <ArrowRight className="h-4 w-4" />
+                </a>
               </Button>
-            </form>
+            </div>
           </motion.div>
 
-          {/* Contact Info */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
@@ -169,8 +105,8 @@ export default function ContactSection() {
                 Get in Touch
               </h3>
               <p className="text-slate-300 leading-relaxed mb-8">
-                I'm always open to discussing new opportunities, creative projects, 
-                or just having a chat about technology and innovation.
+                Prefer to schedule a call instead? Use the booking widget to find a time that works for you.
+                I'm also available via email for any questions or quick discussions.
               </p>
             </div>
 
@@ -187,7 +123,7 @@ export default function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-medium text-white">Email</h4>
-                  <p className="text-slate-400">joashadeoye@gmail.com</p>
+                  <p className="text-slate-400">{siteConfig.email}</p>
                 </div>
               </motion.div>
 
@@ -202,7 +138,7 @@ export default function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-medium text-white">Phone</h4>
-                  <p className="text-slate-400">+2348140582346</p>
+                  <p className="text-slate-400">{siteConfig.phone}</p>
                 </div>
               </motion.div>
 
@@ -217,7 +153,7 @@ export default function ContactSection() {
                 </div>
                 <div>
                   <h4 className="font-medium text-white">Location</h4>
-                  <p className="text-slate-400">Ibadan, NGA</p>
+                  <p className="text-slate-400">{siteConfig.location}</p>
                 </div>
               </motion.div>
             </div>
